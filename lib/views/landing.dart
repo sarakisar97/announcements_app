@@ -10,25 +10,22 @@ class Landing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => AuthCubit(),
-      child: BlocConsumer<AuthCubit, AuthState>(
-        listener: (BuildContext context, AuthState? state) {
-          if(state is AuthLoadFailure){
-            showDialog(context: context, builder: (_) =>
-                AlertDialog(content: Text((state.message))));
-          }
-        },
-        builder: (BuildContext context, state) {
-          if(state is AuthLoadSuccess){
-            return const Home();
-          }
-          if(state is AuthLoadInProgress){
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
-          }
-          return Login();
-        },
-      ),
+    return BlocConsumer<AuthCubit, AuthState>(
+      listener: (BuildContext context, AuthState? state) {
+        if(state is AuthLoadFailure){
+          showDialog(context: context, builder: (_) =>
+              AlertDialog(content: Text((state.message))));
+        }
+      },
+      builder: (BuildContext context, state) {
+        if(state is AuthLoadSuccess){
+          return Home(user: state.userModel);
+        }
+        if(state is AuthLoadInProgress){
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        return Login();
+      },
     );
   }
 }

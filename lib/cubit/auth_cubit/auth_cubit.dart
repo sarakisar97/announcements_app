@@ -1,41 +1,57 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:announcements_app/cubit/auth_cubit/auth_state.dart';
 import 'package:announcements_app/dependency_injection.dart';
+import 'package:announcements_app/network/models/user_model.dart';
+import 'package:announcements_app/network/services/auth_service.dart';
 import 'package:announcements_app/utils/utils.dart';
 import 'package:bloc/bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthCubit extends Cubit<AuthState> {
-  AuthCubit() : super(AuthUnKnown()){
-    // String? token = getIt<SharedPreferences>().getString(AppConstants.tokenHeader);
-    // if(token != null){
-    //   emit(AuthLoadSuccess(Account(token: token)));
-    // }
+  AuthCubit(this._authService) : super(AuthUnKnown()){
+    String? userObject = getIt<SharedPreferences>().getString(AppConstants.userObject);
+    if(userObject != null){
+      emit(AuthLoadSuccess(UserModel.fromJson(json.decode(userObject))));
+    }
   }
 
+  final AuthService _authService;
+
   void login(String username, String password) async{
-    // emit(AuthLoadInProgress());
-    // Account newAccount = Account(username: username, password: password);
-    // try{
-    //   Response<Result<AccountApiModel>> response = await getIt<AccountsService>().login(newAccount.loginToJson());
-    //   if(response.isSuccessful){
-    //     Result<AccountApiModel>? result = response.body;
-    //     if(result is Success){
-    //       Account account = (result as Success).value.account;
-    //       getIt<SharedPreferences>().setString(ADConstants.tokenHeader, account.token!);
-    //       emit(AuthLoadSuccess(account));
-    //     }
-    //     else{
-    //       emit(AuthLoadFailure((result as Error).exception.toString()));
-    //     }
-    //   }
-    // } on SocketException{
-    //   emit(AuthLoadFailure(ADLocale.getTranslatedWithoutContext('network_exception_message')));
-    // }
+    try{
+      emit(AuthLoadInProgress());
+      UserModel newUser = UserModel(username: username, password: password);
+      _authService.login(newUser).then((value) {
+        UserModel userModel = UserModel.fromJson(value.docs.first.data());
+        emit(AuthLoadSuccess(userModel));
+        getIt<SharedPreferences>().setString(AppConstants.userObject, json.encode(value.docs.first.data()));
+      }).onError((error, stackTrace) {
+        emit(AuthLoadFailure(error.toString()));
+      });
+    } on SocketException{
+      emit(AuthLoadFailure(AppConstants.checkInternet));
+    }
+  }
+
+  Future<void> signUp(File? image, String username, String password, UserType type) async {
+    try{
+      emit(AuthLoadInProgress());
+      UserModel newUser = UserModel(imageFile: image, username: username, password: password, type: type.name);
+      _authService.signUp(newUser.toJson(), image).then((value) {
+        UserModel userModel = UserModel.fromJson(value.data());
+        emit(AuthLoadSuccess(userModel));
+        getIt<SharedPreferences>().setString(AppConstants.userObject, json.encode(value.data()));
+      }).onError((error, stackTrace) {
+        emit(AuthLoadFailure(error.toString()));
+      });
+    } on SocketException{
+      emit(AuthLoadFailure(AppConstants.checkInternet));
+    }
   }
 
   void logout(){
-    // getIt<SharedPreferences>().remove(ADConstants.tokenHeader);
+    getIt<SharedPreferences>().remove(AppConstants.userObject);
     emit(AuthUnKnown());
   }
 }

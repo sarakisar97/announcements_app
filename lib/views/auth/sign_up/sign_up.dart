@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'package:announcements_app/cubit/auth_cubit/auth_cubit.dart';
 import 'package:announcements_app/utils/utils.dart';
 import 'package:announcements_app/views/components/components.dart';
 import 'package:flutter/material.dart';
 import 'package:queen_validators/queen_validators.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:auto_route/auto_route.dart';
 
 class SignUp extends StatelessWidget {
   SignUp({Key? key}) : super(key: key);
@@ -11,7 +14,7 @@ class SignUp extends StatelessWidget {
   String? _username;
   String? _password;
   String? _confirmPassword;
-  UserType? _userType;
+  UserType? _type;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,6 +28,12 @@ class SignUp extends StatelessWidget {
           child: SingleChildScrollView(
             child: Column(
               children: [
+                const SizedBox(height: 16.0),
+                EditableCircleAvatar(
+                  defaultImageProvider: const NetworkImage(AppConstants.defaultProfileImage),
+                  onImageSelected: (image) => _image = image,
+                ),
+                const SizedBox(height: 30.0),
                 DefaultTextFormField(
                   decoration: const InputDecoration(
                     labelText: 'User name',
@@ -70,26 +79,17 @@ class SignUp extends StatelessWidget {
                   value: UserType.teacher,
                   items: UserType.values.map((e) => DropdownMenuItem<UserType>(value: e, child: Text(e.name))).toList(),
                   onChanged: (_){},
-                  onSaved: (value) => _userType = value,
+                  onSaved: (value) => _type = value,
                 ),
-                const SizedBox(height: 30.0),
+                const SizedBox(height: 40.0),
                 SubmitButton(onPressed: (){
                   if(FocusScope.of(context).hasFocus){
                     FocusScope.of(context).unfocus();
                   }
                   _formKey.currentState!.save();
                   if(_formKey.currentState!.validate()){
-                    // context.read<AddAnAdminCubit>().addAnAdmin(
-                    //     _phoneNumber,
-                    //     _username!,
-                    //     _firstname,
-                    //     _lastname,
-                    //     _email,
-                    //     _birthYear!,
-                    //     _city!,
-                    //     _password!,
-                    //     _confirmPassword!,
-                    //     _claims);
+                    context.popRoute();
+                    context.read<AuthCubit>().signUp(_image, _username!, _password!, _type!);
                   }
                 }, child: const Text('SIGN UP')),
               ],
